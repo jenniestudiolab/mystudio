@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discovering Your Big Five Personality Traits</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root { --ink:#1f2937; --muted:#6b7280; --accent:#4f46e5; --bg:#f3f4f6; --card:#fff; --line:#e5e7eb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Georgia,'Times New Roman',serif; color:var(--ink); background:var(--bg); line-height:1.5; }
+  .wrap { max-width:820px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:28px; margin:0 0 8px; color:var(--accent); }
+  h2 { font-size:20px; margin:0 0 4px; }
+  p { margin:0 0 10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:18px; }
+  .muted { color:var(--muted); font-size:14px; }
+  .q { display:flex; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--line); }
+  .q input[type=number] { width:60px; padding:6px; font-size:16px; border:1px solid #cbd5e1; border-radius:6px; text-align:center; flex:none; }
+  .q input.err { border-color:#dc2626; background:#fef2f2; }
+  .avg { margin-top:12px; font-weight:bold; }
+  .avg span { color:var(--accent); }
+  .note { background:#fef3c7; border:1px solid #fcd34d; border-radius:6px; padding:8px 12px; font-size:14px; margin:8px 0 12px; }
+  .name { display:flex; gap:10px; flex-wrap:wrap; }
+  .name input { flex:1; min-width:200px; padding:8px; font-size:16px; border:1px solid #cbd5e1; border-radius:6px; }
+  button { font-size:16px; padding:12px 24px; border:0; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--accent); border:1px solid var(--accent); margin-left:8px; }
+  #msg { color:#dc2626; margin-left:12px; }
+  #results { display:none; background:#fff; padding:24px; border:1px solid var(--line); border-radius:10px; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; }
+  th,td { border:1px solid var(--line); padding:8px; text-align:left; font-size:14px; vertical-align:top; }
+  th { background:#eef2ff; }
+  .bar { height:10px; background:#e5e7eb; border-radius:5px; overflow:hidden; min-width:80px; }
+  .bar i { display:block; height:100%; background:var(--accent); }
+  tr { page-break-inside:avoid; }
+  @media print { body { background:#fff; } #formArea,.actions { display:none; } #results { display:block !important; border:0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="formArea">
+    <div class="card">
+      <h1>Workbook: Discovering Your Big Five Personality Traits</h1>
+      <p>Welcome to your Big Five Personality Traits self-assessment workbook! Understanding your personality is the first step toward building productivity systems, time management strategies, and leadership styles that work for you.</p>
+      <p>For each of the five traits, you’ll answer 10 real-world questions and score yourself from 1 to 10, where:</p>
+      <p><b>1</b> means <i>This rarely applies to me</i><br><b>10</b> means <i>This describes me perfectly</i></p>
+      <p class="muted">After each section, your average is calculated automatically. Ready? Let’s get started!</p>
+      <div class="name"><input id="who" placeholder="Your name (optional)"></div>
+    </div>
+
+    <form id="form" novalidate></form>
+
+    <div class="actions">
+      <button id="submit" type="button">Submit &amp; Download PDF</button><span id="msg"></span>
+    </div>
+  </div>
+
+  <div id="results"></div>
+  <div class="actions" id="after" style="display:none;margin-top:16px">
+    <button id="again" type="button" class="secondary" style="margin-left:0">← Back to workbook</button>
+    <button id="redo" type="button">Download PDF again</button><span id="dlmsg" class="muted" style="margin-left:12px"></span>
+  </div>
+</div>
+
+<script>
+const TRAITS = [
+ {key:'Openness to Experience', short:'Openness', desc:'This trait reflects your level of creativity, curiosity, and willingness to explore new ideas and experiences.', q:[
+  'I enjoy trying new foods, traveling to unfamiliar places, or experimenting with new hobbies.',
+  'I often seek out new ideas, books, or knowledge even when I’m not required to.',
+  'I embrace change easily and get excited about new opportunities.',
+  'I prefer variety and novelty over routine and repetition.',
+  'I enjoy brainstorming and thinking outside the box to solve problems.',
+  'I’m curious about how things work and often ask “why” or “how.”',
+  'I find myself daydreaming or imagining different scenarios frequently.',
+  'I’m open to feedback and different perspectives, even if they challenge my beliefs.',
+  'I enjoy engaging in creative activities like writing, painting, or music.',
+  'I adapt quickly when faced with unexpected situations or changes in plans.']},
+ {key:'Conscientiousness', short:'Conscientiousness', desc:'This trait reflects your level of organization, dependability, and attention to detail.', q:[
+  'I create to-do lists or schedules to stay organized.',
+  'I meet deadlines consistently without needing last-minute pressure.',
+  'I double-check my work to ensure accuracy and completeness.',
+  'I feel uncomfortable when things are messy or disorganized.',
+  'I plan ahead and consider future consequences before acting.',
+  'I can be relied on to follow through with commitments.',
+  'I prefer structure and routine to spontaneity.',
+  'I take pride in being punctual and prepared.',
+  'I break large tasks into smaller, manageable steps.',
+  'I’m highly self-disciplined, even when I don’t feel motivated.']},
+ {key:'Extraversion', short:'Extraversion', desc:'This trait reflects how outgoing, energetic, and social you are.', q:[
+  'I feel energized after social gatherings or spending time with others.',
+  'I enjoy leading group activities or being the center of attention.',
+  'I find it easy to start conversations with strangers.',
+  'I thrive in environments with lots of interaction and collaboration.',
+  'I prefer group activities over spending time alone.',
+  'I feel confident expressing my thoughts and opinions publicly.',
+  'I enjoy networking and meeting new people in professional settings.',
+  'I seek out social events or gatherings in my free time.',
+  'I feel comfortable making small talk in various situations.',
+  'I often initiate plans with friends or colleagues.']},
+ {key:'Agreeableness', short:'Agreeableness', desc:'This trait reflects your level of compassion, cooperation, and empathy toward others.', q:[
+  'I go out of my way to help others, even when it’s inconvenient.',
+  'I prefer to avoid conflicts and try to keep the peace.',
+  'I listen carefully to others and empathize with their feelings.',
+  'I find it easy to forgive people when they make mistakes.',
+  'I value harmony and teamwork over competition.',
+  'I often compromise to maintain good relationships.',
+  'I feel uncomfortable when others are upset or in distress.',
+  'I enjoy volunteering or contributing to causes I care about.',
+  'I trust people easily and believe in their good intentions.',
+  'I’m sensitive to others\' needs and feelings in group settings.']},
+ {key:'Neuroticism (Emotional Stability)', short:'Neuroticism', reversed:true, desc:'This trait reflects how you handle stress, anxiety, and emotional ups and downs.', q:[
+  'I stay calm and composed even in high-pressure situations.',
+  'I find it easy to bounce back from setbacks or failures.',
+  'I rarely feel anxious or overwhelmed by day-to-day tasks.',
+  'I handle criticism well without taking it personally.',
+  'I’m confident in my abilities, even when faced with challenges.',
+  'I maintain a positive outlook, even when things don’t go as planned.',
+  'I manage stress through healthy coping mechanisms.',
+  'I don’t dwell on mistakes or negative experiences.',
+  'I rarely experience mood swings or emotional fluctuations.',
+  'I feel in control of my emotions, even during conflict.']}
+];
+const LEVELS = {
+ high:{label:'High (7–10)', text:'This trait is a strong part of your personality. Leverage it in your productivity, leadership, and time management systems.'},
+ mod:{label:'Moderate (4–6)', text:'You may exhibit this trait in certain situations but not consistently. Reflect on how it influences your work.'},
+ low:{label:'Low (1–3)', text:'This trait is less dominant in your personality. Consider strategies to compensate or delegate tasks that require this trait.'}
+};
+const level = a => a >= 7 ? LEVELS.high : a >= 4 ? LEVELS.mod : LEVELS.low;
+const form = document.getElementById('form');
+
+TRAITS.forEach((t, ti) => {
+  const s = document.createElement('section');
+  s.className = 'card';
+  s.innerHTML = `<h2>Trait ${ti+1}: ${t.key}</h2><p class="muted">${t.desc}</p>` +
+    (t.reversed ? `<div class="note"><b>Note – reversed scale for this section:</b><br>10 means <i>This rarely applies to me</i><br>1 means <i>This describes me perfectly</i></div>` : '') +
+    t.q.map((q, qi) => `<label class="q"><input type="number" min="1" max="10" step="1" data-t="${ti}" id="t${ti}q${qi}" inputmode="numeric"><span>${q}</span></label>`).join('') +
+    `<div class="avg">Your Average ${t.short} Score: <span id="avg${ti}">–</span></div>`;
+  form.appendChild(s);
+});
+
+function scores(ti) {
+  return [...document.querySelectorAll(`input[data-t="${ti}"]`)].map(i => parseFloat(i.value));
+}
+form.addEventListener('input', e => {
+  const i = e.target; if (i.type !== 'number') return;
+  const v = parseFloat(i.value);
+  i.classList.toggle('err', i.value !== '' && !(v >= 1 && v <= 10));
+  const ti = i.dataset.t, sc = scores(ti);
+  document.getElementById('avg' + ti).textContent =
+    sc.every(x => x >= 1 && x <= 10) ? (sc.reduce((a,b)=>a+b,0)/10).toFixed(1) : '–';
+});
+
+function validate() {
+  let first = null;
+  document.querySelectorAll('#form input').forEach(i => {
+    const v = parseFloat(i.value), bad = !(v >= 1 && v <= 10);
+    i.classList.toggle('err', bad);
+    if (bad && !first) first = i;
+  });
+  return first;
+}
+
+function buildResults() {
+  const name = document.getElementById('who').value.trim();
+  const date = new Date().toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'});
+  const data = TRAITS.map((t, ti) => {
+    const sc = scores(ti);
+    return {t, sc, avg: sc.reduce((a,b)=>a+b,0)/10};
+  });
+  let h = `<h1>Your Big Five Personality Results</h1>
+    <p class="muted">${name ? 'Name: <b>' + name.replace(/</g,'&lt;') + '</b> &nbsp;|&nbsp; ' : ''}Date: ${date}</p>
+    <table><tr><th>Trait</th><th>Average</th><th style="width:25%">Level</th><th>Interpretation</th></tr>` +
+    data.map(d => { const L = level(d.avg);
+      return `<tr><td><b>${d.t.key}</b></td><td>${d.avg.toFixed(1)} / 10<div class="bar"><i style="width:${d.avg*10}%"></i></div></td><td>${L.label}</td><td>${L.text}</td></tr>`; }).join('') +
+    `</table>`;
+  data.forEach((d, ti) => {
+    h += `<div style="page-break-inside:avoid"><h2 style="margin-top:16px">Trait ${ti+1}: ${d.t.key} — ${d.avg.toFixed(1)}</h2>` +
+      (d.t.reversed ? `<p class="muted">Reversed scale: 10 = rarely applies, 1 = describes me perfectly.</p>` : '') +
+      `<table>` + d.t.q.map((q, qi) => `<tr><td style="width:40px;text-align:center"><b>${d.sc[qi]}</b></td><td>${q}</td></tr>`).join('') + `</table></div>`;
+  });
+  h += `<h2 style="margin-top:16px">Interpreting Your Results</h2>
+    <p><b>High Score (7–10):</b> ${LEVELS.high.text}</p>
+    <p><b>Moderate Score (4–6):</b> ${LEVELS.mod.text}</p>
+    <p><b>Low Score (1–3):</b> ${LEVELS.low.text}</p>`;
+  return h;
+}
+
+async function downloadPDF() {
+  const el = document.getElementById('results');
+  const name = document.getElementById('who').value.trim().replace(/[^\w-]+/g, '_');
+  const opt = { margin:12, filename:`big-five-results${name ? '-' + name : ''}.pdf`,
+    image:{type:'jpeg', quality:0.98}, html2canvas:{scale:2},
+    jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css','legacy']} };
+  const msg = document.getElementById('dlmsg');
+  msg.textContent = '';
+  const fallback = () => { try { window.print(); } catch (e) { msg.textContent = 'PDF download is unavailable here.'; } };
+  if (!window.html2pdf) return fallback();
+  const dl = (window.claude && claude.use) ? await claude.use('downloads') : null;
+  if (!dl) return fallback();
+  try {
+    const blob = await html2pdf().set(opt).from(el).outputPdf('blob');
+    await dl.save({filename: opt.filename, data: blob});
+  } catch (e) {
+    if (e && e.code === 'declined') msg.textContent = 'Download cancelled. Use “Download PDF again” to retry.';
+    else msg.textContent = 'Could not save the PDF. Please try again.';
+  }
+}
+
+document.getElementById('submit').onclick = () => {
+  const bad = validate(), msg = document.getElementById('msg');
+  if (bad) { msg.textContent = 'Please score every question from 1 to 10.'; bad.scrollIntoView({behavior:'smooth', block:'center'}); bad.focus(); return; }
+  msg.textContent = '';
+  const r = document.getElementById('results');
+  r.innerHTML = buildResults();
+  r.style.display = 'block';
+  document.getElementById('formArea').style.display = 'none';
+  document.getElementById('after').style.display = 'block';
+  window.scrollTo(0, 0);
+  downloadPDF();
+};
+document.getElementById('redo').onclick = downloadPDF;
+document.getElementById('again').onclick = () => {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('after').style.display = 'none';
+  document.getElementById('formArea').style.display = 'block';
+};
+</script>
+</body>
+</html>
